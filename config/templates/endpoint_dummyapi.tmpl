@@ -1,0 +1,24 @@
+{
+   "endpoint": "/movies",
+   {{ include "input_headers.tmpl"}},
+   "backend": [
+     {
+       "url_pattern": "/api/movies",
+       "method": "GET",
+       "extra_config": {},
+       "host": ["https://dummyapi.online"]
+     }
+   ]
+ },
+ {
+    "endpoint": "/movies/{id}",
+    {{ include "input_headers.tmpl"}},
+    "backend": [
+      {
+        "url_pattern": "/api/movies/{id}",
+        "method": "GET",
+        "extra_config": {},
+        "host": ["https://dummyapi.online"]
+       }
+    ]
+  }

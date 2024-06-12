@@ -1,0 +1,16 @@
+{{define "TemplateApiEndpoints"}}
+
+{
+   "endpoint": "/template/health",
+   {{ include "input_headers.tmpl"}},
+   "backend": [
+     {
+       "url_pattern": "/health",
+       "method": "GET",
+       "extra_config": {},
+       "host": ["{{ .urls.template_api_host }}"]
+     }
+   ]
+ }
+
+{{end}}

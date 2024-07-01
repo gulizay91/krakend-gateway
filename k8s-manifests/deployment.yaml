@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${SERVICE_NAME}
+  namespace: ${K8S_NAMESPACE}
+  labels:
+      type: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${SERVICE_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${SERVICE_NAME}
+    spec:
+      containers:
+        - name: ${SERVICE_NAME}
+          image: ${DOCKER_IMAGE_TAG}
+          ports:
+            - containerPort: ${DOCKER_CONTAINER_SERVICE_PORT}

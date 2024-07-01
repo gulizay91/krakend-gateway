@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}
+  namespace: ${K8S_NAMESPACE}
+  annotations:
+#    kubernetes.digitalocean.com/load-balancer-id: "8d4b7b6f-f96b-46fb-a021-9393dbb5f184"
+    service.beta.kubernetes.io/do-loadbalancer-enable-backend-keepalive: "false"
+#    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
+#    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "do-loadbalancer-certificate-id"
+#    service.beta.kubernetes.io/do-loadbalancer-redirect-http-to-https: "true"
+spec:
+  #type: ClusterIP # internal application
+  type: LoadBalancer # external connectivity application and production environment, high availability and scalability
+  #type: NodePort # external connectivity application
+  selector:
+    app: ${SERVICE_NAME}
+  ports:
+    - name: http
+      port: ${SERVICE_PORT} # service cluster port
+      targetPort: ${DOCKER_CONTAINER_SERVICE_PORT} # application port from dockerfile
+#      nodePort: 30010
+      protocol: TCP
+#    - name: https
+#      protocol: TCP
+#      port: 443
+#      targetPort: ${DOCKER_CONTAINER_SERVICE_PORT}

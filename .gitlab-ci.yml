@@ -12,7 +12,7 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:v$CI_PIPELINE_ID
   K8S_NAMESPACE_DEV: k8s-ns-dev
-  K8S_NAMESPACE_PROD: lk8s-ns-prod
+  K8S_NAMESPACE_PROD: k8s-ns-prod
   # Define the following variables via service
   SERVICE_APP_PATH: .
   SERVICE_NAME: krakend-gateway
@@ -103,7 +103,7 @@ build-docker-job-prod:
     SERVICE_ENVIRONMENT: prod
   before_script:
     - echo "Logging in to $CI_REGISTRY..."
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login $CI_REGISTRY -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD
   script:
     - echo "Docker build starting. buildNumber $CI_PIPELINE_ID and image-tag $DOCKER_IMAGE_TAG "
     - docker build --rm --build-arg ENV=$SERVICE_ENVIRONMENT -t $DOCKER_IMAGE_TAG $SERVICE_APP_PATH
@@ -154,8 +154,11 @@ deploy-dok-job-prod:
     environment: production
     variables:
       K8S_NAMESPACE: $K8S_NAMESPACE_PROD
-      K8S_CLUSTER_NAME: default
-      K8S_DOCKER_REGISTRY_SECRET_NAME: gitlab-registry-secret
+      K8S_CLUSTER_NAME: k8s-default-cluster
+      K8S_DOCKER_REGISTRY_SECRET_NAME: gitlab-registry-secret-$SERVICE_NAME
+      K8S_LOAD_BALANCER_NAME: a4a5dd5cfbdf94c998dea1464f840efc
+      K8S_SERVICE_HTTP_NODE_PORT: 30010
+      K8S_SERVICE_HTTPS_NODE_PORT: 30011
       SERVICE_ENVIRONMENT: prod
       SERVICE_PORT: 8080
       DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
@@ -175,8 +178,14 @@ deploy-dok-job-prod:
       - doctl kubernetes cluster kubeconfig save $K8S_CLUSTER_NAME
       - envsubst < "$MANIFEST_PATH/namespace.yaml" > "$MANIFEST_PATH/namespace-replaced.yaml"
       - kubectl apply -f $MANIFEST_PATH/namespace-replaced.yaml  # create namespaces
+      # Add port forwarding (remove existing one)
+      # LOAD_BALANCER_ID=$(doctl compute load-balancer list --format ID,Name --no-header | grep "your-load-balancer-name" | awk '{print $1}')
+      # doctl compute load-balancer add-forwarding-rules $LOAD_BALANCER_ID --forwarding-rules entry_protocol:http,entry_port:80,target_protocol:http,target_port:<ServiceNodePort>
+      - doctl compute load-balancer remove-forwarding-rules $(doctl compute load-balancer list --format ID,Name --no-header | grep $K8S_LOAD_BALANCER_NAME | awk '{print $1}') --forwarding-rules entry_protocol:http,entry_port:$SERVICE_PORT,target_protocol:http,target_port:$K8S_SERVICE_HTTP_NODE_PORT || true
+      - doctl compute load-balancer add-forwarding-rules $(doctl compute load-balancer list --format ID,Name --no-header | grep $K8S_LOAD_BALANCER_NAME | awk '{print $1}') --forwarding-rules entry_protocol:http,entry_port:$SERVICE_PORT,target_protocol:http,target_port:$K8S_SERVICE_HTTP_NODE_PORT || true
       # Docker registry secret oluşturun
-      - kubectl create secret docker-registry $K8S_DOCKER_REGISTRY_SECRET_NAME --docker-server=$CI_REGISTRY --docker-username=$CI_REGISTRY_USER --docker-password=$CI_REGISTRY_PASSWORD --namespace=$K8S_NAMESPACE || true
+      - kubectl delete secret -n $K8S_NAMESPACE $K8S_DOCKER_REGISTRY_SECRET_NAME --ignore-not-found || true
+      - kubectl create secret docker-registry $K8S_DOCKER_REGISTRY_SECRET_NAME --docker-server=$CI_REGISTRY --docker-username=$CI_DEPLOY_USER --docker-password=$CI_DEPLOY_PASSWORD --namespace=$K8S_NAMESPACE || true
     script:
       - echo "Deploying application to kubernetes server namespace $K8S_NAMESPACE ..."
       - envsubst < "$MANIFEST_PATH/deployment.yaml" > "$MANIFEST_PATH/deployment-replaced.yaml"

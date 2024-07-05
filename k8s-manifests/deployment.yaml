@@ -20,3 +20,5 @@ spec:
           image: ${DOCKER_IMAGE_TAG}
           ports:
             - containerPort: ${DOCKER_CONTAINER_SERVICE_PORT}
+      imagePullSecrets:
+        - name: ${K8S_DOCKER_REGISTRY_SECRET_NAME}

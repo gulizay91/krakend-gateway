@@ -4,7 +4,7 @@ metadata:
   name: ${SERVICE_NAME}
   namespace: ${K8S_NAMESPACE}
   annotations:
-#    kubernetes.digitalocean.com/load-balancer-id: "8d4b7b6f-f96b-46fb-a021-9393dbb5f184"
+#    kubernetes.digitalocean.com/load-balancer-id: "00ed97df-2496-4bbd-9ac1-8e694a429f9b"
     service.beta.kubernetes.io/do-loadbalancer-enable-backend-keepalive: "false"
 #    service.beta.kubernetes.io/do-loadbalancer-tls-ports: "443"
 #    service.beta.kubernetes.io/do-loadbalancer-certificate-id: "do-loadbalancer-certificate-id"
@@ -19,9 +19,10 @@ spec:
     - name: http
       port: ${SERVICE_PORT} # service cluster port
       targetPort: ${DOCKER_CONTAINER_SERVICE_PORT} # application port from dockerfile
-#      nodePort: 30010
+      nodePort: ${K8S_SERVICE_HTTP_NODE_PORT}
       protocol: TCP
 #    - name: https
 #      protocol: TCP
 #      port: 443
+#      nodePort: ${K8S_SERVICE_HTTPS_NODE_PORT}
 #      targetPort: ${DOCKER_CONTAINER_SERVICE_PORT}
